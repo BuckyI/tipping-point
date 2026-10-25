@@ -85,16 +85,30 @@ def grid_visit_test(grid: Grid) -> bool:
     return any(row == grid.rows - 1 for row, _ in visited)
 
 
-def batch_grid_visit_test(rows: int, cols: int, percent: float, count: int) -> float:
-    """测试指定网格参数下，在 count 个网格中有多少比例的网格可以从第一行到达最后一行。"""
-    grids = []
-    success_count = 0
-    for _ in tqdm(range(count)):  # 进度条
-        grid = Grid(rows, cols, percent)
-        grids.append(grid)
-        if grid_visit_test(grid):
-            success_count += 1
-    return success_count / count
+def batch_grid_visit_test(rows: int, cols: int, count: int):
+    """percent 从 0 到 100 依次取值，返回 (percent, success_rate) 的对应关系。
+
+    每个 percent 下随机生成 count 个网格，统计能从第一行到达最后一行的比例。
+    """
+    percents = []
+    success_rates = []
+    for percent in tqdm(range(101), desc="percent"):  # 进度条
+        success_count = 0
+        for _ in range(count):
+            if grid_visit_test(Grid(rows, cols, percent)):
+                success_count += 1
+        percents.append(percent)
+        success_rates.append(success_count / count)
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(percents, success_rates, marker="o", markersize=3)
+    plt.xlabel("percent (%)")
+    plt.ylabel("success rate")
+    plt.title("Grid percolation: success rate vs percent")
+    plt.ylim(-0.05, 1.05)
+    plt.grid(True)
+    plt.savefig(f"grid_percolation_{rows}x{cols}_{count}.png", dpi=300)
+    plt.show()
 
 
 def visualize(grid: Grid):
@@ -129,8 +143,7 @@ def main():
 
     # visualize(grid)
 
-    success_rate = batch_grid_visit_test(80, 80, 30, 1000)
-    print(f"成功比例: {success_rate:.2%}")
+    batch_grid_visit_test(400, 400, 100)
 
 
 if __name__ == "__main__":
