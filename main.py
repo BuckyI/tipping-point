@@ -41,15 +41,47 @@ class Grid:
         return self.nodes[row][col]
 
     def visitable(self, row: int, col: int) -> list[Node]:
-        """返回下方、左侧、右侧相邻且可通的节点。"""
+        """返回上下左右相邻且可通的节点。"""
         result = []
-        for dr, dc in ((1, 0), (0, -1), (0, 1)):
+        for dr, dc in ((1, 0), (-1, 0), (0, -1), (0, 1)):
             r, c = row + dr, col + dc
             if 0 <= r < self.rows and 0 <= c < self.cols:
                 neighbor = self.nodes[r][c]
                 if neighbor.accessible == 1:
                     result.append(neighbor)
         return result
+
+
+def grid_visit_test(grid: Grid) -> bool:
+    """从第一行的可通节点出发遍历，返回能否到达最后一行。"""
+    visited: set[tuple[int, int]] = set()  # 只记录可通节点
+    stack: list[Node] = []
+
+    # TODO: 逻辑可复用简化
+
+    # 重置访问状态，保证同一网格可重复调用
+    for row in grid.nodes:
+        for node in row:
+            node.visited = 0
+
+    # 第一行的可通节点作为起点
+    for col in range(grid.cols):
+        node = grid.node(0, col)
+        if node.accessible == 1:
+            node.visited = 1
+            visited.add((node.row, node.col))
+            stack.append(node)
+
+    # 一直遍历到稳定状态（可通节点要么已访问，要么被隔断）
+    while stack:
+        node = stack.pop()
+        for neighbor in grid.visitable(node.row, node.col):
+            if neighbor.visited == 0:
+                neighbor.visited = 1
+                visited.add((neighbor.row, neighbor.col))
+                stack.append(neighbor)
+
+    return any(row == grid.rows - 1 for row, _ in visited)
 
 
 def visualize(grid: Grid):
@@ -70,7 +102,7 @@ def visualize(grid: Grid):
 
 
 def main():
-    grid = Grid(80, 80, 60)
+    grid = Grid(80, 80, 30)
     total = grid.rows * grid.cols
     print(f"网格: {grid.rows}x{grid.cols}, N={grid.percent}%")
     print(f"可通节点: {grid.open_count}/{total} ({grid.open_count / total:.2%})")
@@ -78,6 +110,9 @@ def main():
     node = grid.node(0, 0)
     print(f"节点 ({node.row}, {node.col}) accessible={node.accessible}")
     print("可访问的邻居:", [(n.row, n.col) for n in grid.visitable(0, 0)])
+
+    reached = grid_visit_test(grid)
+    print(f"是否到达最后一行: {reached}")
 
     visualize(grid)
 
