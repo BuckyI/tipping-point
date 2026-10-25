@@ -1,12 +1,17 @@
 import random
 from dataclasses import dataclass
 
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import ListedColormap
+
 
 @dataclass
 class Node:
     row: int
     col: int
     accessible: int  # 1 表示通，0 表示不通
+    visited: int = 0  # 1 表示已访问，0 表示未访问
 
 
 class Grid:
@@ -47,8 +52,25 @@ class Grid:
         return result
 
 
+def visualize(grid: Grid):
+    """用 matplotlib 显示网格。"""
+    states = np.zeros((grid.rows, grid.cols), dtype=np.uint8)
+    for row in range(grid.rows):
+        for col in range(grid.cols):
+            node = grid.nodes[row][col]
+            if node.accessible == 1:
+                states[row, col] = 1 if node.visited == 0 else 2
+
+    # 0 黑、1 灰、2 橙黄
+    cmap = ListedColormap(["black", "gray", "#FFA500"])
+    plt.figure(figsize=(8, 8))
+    plt.imshow(states, cmap=cmap, vmin=0, vmax=2, interpolation="nearest")
+    plt.axis("off")
+    plt.show()
+
+
 def main():
-    grid = Grid(800, 800, 60)
+    grid = Grid(80, 80, 60)
     total = grid.rows * grid.cols
     print(f"网格: {grid.rows}x{grid.cols}, N={grid.percent}%")
     print(f"可通节点: {grid.open_count}/{total} ({grid.open_count / total:.2%})")
@@ -56,6 +78,8 @@ def main():
     node = grid.node(0, 0)
     print(f"节点 ({node.row}, {node.col}) accessible={node.accessible}")
     print("可访问的邻居:", [(n.row, n.col) for n in grid.visitable(0, 0)])
+
+    visualize(grid)
 
 
 if __name__ == "__main__":
