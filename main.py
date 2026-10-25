@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap
+from scipy.stats import norm, truncnorm
 from tqdm import tqdm
 
 
@@ -111,14 +112,56 @@ def batch_grid_visit_test(rows: int, cols: int, count: int):
     plt.show()
 
 
+def batch_grid_visit_test2(rows: int, cols: int, count: int):
+    """percent 从 0 到 100 依次取值，返回 (percent, success_rate) 的对应关系。
+    优化 percent 采样算法，专注临界点附近。
+
+    每个 percent 下随机生成 count 个网格，统计能从第一行到达最后一行的比例。
+    """
+
+    def __sample_percents(n, start, end):
+        """mu: 中心，sigma: 标准差，n: 样本数量，[lo, hi]: 采样范围"""
+        mu = (start + end) / 2
+        sigma = (end - start) / (2 * 1)  # 3 sigma
+        x = norm.ppf(np.linspace(0.001, 0.999, n), loc=mu, scale=sigma)
+        # x = norm.ppf(np.random.rand(n), loc=mu, scale=sigma)
+        return x
+
+    percents = __sample_percents(count, start=58.5, end=59.5)
+
+    success_rates = []
+    for percent in tqdm(percents, desc="percent"):  # 进度条
+        success_count = 0
+        for _ in tqdm(
+            range(count), desc=f"percent={percent:.2f}", leave=False
+        ):  # 内层进度条
+            if grid_visit_test(Grid(rows, cols, percent)):
+                success_count += 1
+        success_rates.append(success_count / count)
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(percents, success_rates, marker="o", markersize=3)
+    plt.xlabel("percent (%)")
+    plt.ylabel("success rate")
+    plt.title("Grid percolation: success rate vs percent")
+    plt.ylim(-0.05, 1.05)
+    plt.grid(True)
+    plt.savefig(f"grid_percolation2_{rows}x{cols}_{count}.png", dpi=300)
+    plt.show()
+
+
 def visualize(grid: Grid):
     """用 matplotlib 显示网格。"""
     states = np.zeros((grid.rows, grid.cols), dtype=np.uint8)
     for row in range(grid.rows):
         for col in range(grid.cols):
             node = grid.nodes[row][col]
-            if node.accessible == 1:
-                states[row, col] = 1 if node.visited == 0 else 2
+
+            states[row, col] = 0  # 黑色
+            if node.accessible and not node.visited:
+                states[row, col] = 1  # 灰色
+            if node.accessible and node.visited:
+                states[row, col] = 2  # 橙色
 
     # 0 黑、1 灰、2 橙黄
     cmap = ListedColormap(["black", "gray", "#FFA500"])
@@ -143,7 +186,8 @@ def main():
 
     # visualize(grid)
 
-    batch_grid_visit_test(400, 400, 100)
+    batch_grid_visit_test2(200, 200, 60)
+    print("finished.")
 
 
 if __name__ == "__main__":
