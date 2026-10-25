@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap
+from tqdm import tqdm
 
 
 @dataclass
@@ -84,6 +85,18 @@ def grid_visit_test(grid: Grid) -> bool:
     return any(row == grid.rows - 1 for row, _ in visited)
 
 
+def batch_grid_visit_test(rows: int, cols: int, percent: float, count: int) -> float:
+    """测试指定网格参数下，在 count 个网格中有多少比例的网格可以从第一行到达最后一行。"""
+    grids = []
+    success_count = 0
+    for _ in tqdm(range(count)):  # 进度条
+        grid = Grid(rows, cols, percent)
+        grids.append(grid)
+        if grid_visit_test(grid):
+            success_count += 1
+    return success_count / count
+
+
 def visualize(grid: Grid):
     """用 matplotlib 显示网格。"""
     states = np.zeros((grid.rows, grid.cols), dtype=np.uint8)
@@ -102,19 +115,22 @@ def visualize(grid: Grid):
 
 
 def main():
-    grid = Grid(80, 80, 30)
-    total = grid.rows * grid.cols
-    print(f"网格: {grid.rows}x{grid.cols}, N={grid.percent}%")
-    print(f"可通节点: {grid.open_count}/{total} ({grid.open_count / total:.2%})")
+    # grid = Grid(80, 80, 30)
+    # total = grid.rows * grid.cols
+    # print(f"网格: {grid.rows}x{grid.cols}, N={grid.percent}%")
+    # print(f"可通节点: {grid.open_count}/{total} ({grid.open_count / total:.2%})")
 
-    node = grid.node(0, 0)
-    print(f"节点 ({node.row}, {node.col}) accessible={node.accessible}")
-    print("可访问的邻居:", [(n.row, n.col) for n in grid.visitable(0, 0)])
+    # node = grid.node(0, 0)
+    # print(f"节点 ({node.row}, {node.col}) accessible={node.accessible}")
+    # print("可访问的邻居:", [(n.row, n.col) for n in grid.visitable(0, 0)])
 
-    reached = grid_visit_test(grid)
-    print(f"是否到达最后一行: {reached}")
+    # reached = grid_visit_test(grid)
+    # print(f"是否到达最后一行: {reached}")
 
-    visualize(grid)
+    # visualize(grid)
+
+    success_rate = batch_grid_visit_test(80, 80, 30, 1000)
+    print(f"成功比例: {success_rate:.2%}")
 
 
 if __name__ == "__main__":
