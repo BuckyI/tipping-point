@@ -10,7 +10,7 @@ class Node:
 
 
 class Grid:
-    """指定大小的网格，每个节点按百分比随机设为通。"""
+    """指定大小的网格，随机选择固定数量的节点设为通。"""
 
     def __init__(self, rows: int, cols: int, percent: float):
         if not 0 <= percent <= 100:
@@ -19,11 +19,16 @@ class Grid:
         self.rows = rows
         self.cols = cols
         self.percent = percent
+
+        # generate exact number of accessible nodes based on the percentage
+        total = rows * cols
+        # 四舍五入到整数个节点；位置随机，但通节点的数量和比例固定。
+        self.open_count = round(total * percent / 100)
+        cells = [1] * self.open_count + [0] * (total - self.open_count)
+        random.shuffle(cells)  # in-place shuffle to randomize the cells
+
         self.nodes = [
-            [
-                Node(row, col, 1 if random.random() * 100 < percent else 0)
-                for col in range(cols)
-            ]
+            [Node(row, col, cells[row * cols + col]) for col in range(cols)]
             for row in range(rows)
         ]
 
@@ -44,10 +49,9 @@ class Grid:
 
 def main():
     grid = Grid(800, 800, 60)
-    accessible = sum(node.accessible for row in grid.nodes for node in row)
     total = grid.rows * grid.cols
     print(f"网格: {grid.rows}x{grid.cols}, N={grid.percent}%")
-    print(f"实际可通比例: {accessible / total:.2%}")
+    print(f"可通节点: {grid.open_count}/{total} ({grid.open_count / total:.2%})")
 
     node = grid.node(0, 0)
     print(f"节点 ({node.row}, {node.col}) accessible={node.accessible}")
